@@ -8,6 +8,7 @@ module Game
     Status (..),
     Outcome (..),
     Player (..),
+    Game
   )
 where
 
@@ -38,7 +39,7 @@ instance Show Slot where
 
 type Move = Int
 
-data Status = Ongoing | Finished Outcome
+data Status = Ongoing Player | Finished Outcome
   deriving (Eq, Show)
 
 data Outcome = Win Player | Draw
@@ -61,7 +62,7 @@ status :: Game -> Status
 status game =
   maybe notFinished (Finished . Win) (findWinner game)
   where
-    notFinished = if isOngoing game then Ongoing else Finished Draw
+    notFinished = if isOngoing game then Ongoing (nextPlayer game) else Finished Draw
 
 isOngoing :: Game -> Bool
 isOngoing Game {rows} = any (elem Empty) rows
