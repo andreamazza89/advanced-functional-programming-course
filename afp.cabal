@@ -31,6 +31,7 @@ library
 library connect-four-lib
   exposed-modules:
       Game
+      ComputerPlayer
   other-modules:
       Main
       Paths_afp
@@ -43,6 +44,7 @@ library connect-four-lib
 executable connect-four
   main-is: Main.hs
   other-modules:
+      ComputerPlayer
       Game
       Paths_afp
   hs-source-dirs:

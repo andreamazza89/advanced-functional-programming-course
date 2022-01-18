@@ -1,14 +1,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Game
-  ( new,
+  ( availableMoves,
+    new,
     makeMove,
     status,
     rowsAsStrings,
+    Move,
     Status (..),
     Outcome (..),
     Player (..),
-    Game
+    Game,
   )
 where
 
@@ -64,6 +66,16 @@ status game =
   where
     notFinished = if isOngoing game then Ongoing (nextPlayer game) else Finished Draw
 
+availableMoves :: Game -> [Move]
+availableMoves Game {rows} =
+  map fst
+    . filter (hasBlanks . snd)
+    . zip [0..]
+    $ toColumns rows
+  where
+    hasBlanks :: Column -> Bool
+    hasBlanks = elem Empty
+
 isOngoing :: Game -> Bool
 isOngoing Game {rows} = any (elem Empty) rows
 
@@ -71,10 +83,15 @@ findWinner :: Game -> Maybe Player
 findWinner Game {rows, adjacentToWin, nextPlayer} =
   check (toColumns rows) <|> check rows <|> check diagonals
   where
-    check = findWinningStreak . fmap filterCurrentPlayer
+    check :: [[Slot]] -> Maybe Player
+    check lines = findWinningStreak $ fmap (filterCurrentPlayer .  grr) lines
+    grr :: [Slot] -> [[Slot]]
+    grr = List.group
+    filterCurrentPlayer :: [[Slot]] -> [[Slot]]
+    filterCurrentPlayer = List.filter (all (== Taken currentPlayer))
     currentPlayer = if nextPlayer == Nought then Cross else Nought
-    filterCurrentPlayer = List.filter (== Taken currentPlayer)
-    findWinningStreak cols = if any ((== adjacentToWin) . length) cols then Just currentPlayer else Nothing
+    findWinningStreak :: [[[Slot]]] -> Maybe Player
+    findWinningStreak slots = if any ((== adjacentToWin) . length) (mconcat slots) then Just currentPlayer else Nothing
     diagonals = toDiagonals rows ++ toDiagonals (reverse rows)
 
 makeMove :: Move -> Game -> Maybe Game

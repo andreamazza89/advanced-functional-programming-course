@@ -1,10 +1,11 @@
 module Main where
 
+import ComputerPlayer
 import Game
 import Test.Hspec
 
 main :: IO ()
-main = hspec $
+main = hspec $ do
   describe "Game" $ do
     it "the first player can make a move" $
       Game.rowsAsStrings
@@ -64,8 +65,6 @@ main = hspec $
                 >>= crossMove 1
             )
         `shouldBe` Just (Finished Draw)
-
--- the first player can make a move
 
 smallGame = Game.new 2 3 2
 

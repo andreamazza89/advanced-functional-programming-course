@@ -33,7 +33,9 @@ executables:
 internal-libraries:
   connect-four-lib:
     source-dirs: connect-four/src
-    exposed-modules: Game
+    exposed-modules:
+      - Game
+      - ComputerPlayer
 
 tests:
   connect-four-tests:
