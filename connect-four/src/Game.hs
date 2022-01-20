@@ -19,20 +19,27 @@ import qualified Data.List as List
 import Data.Maybe
 
 data Game = Game
-  { rows :: [Row], -- Rows stored in reverse order (bottom to top). This is because when adding a move, we replace the first empty slot starting from the bottom
+  -- Rows stored in reverse order (bottom to top). I think it would be better if we store columns instead of rows as there are more operations over columns than rows
+  { rows :: [Row],
     nextPlayer :: Player,
     adjacentToWin :: Int
   }
 
-data Player = Nought | Cross
+data Player
+  = Nought
+  | Cross
   deriving (Show, Eq)
 
-type Row = [Slot]
-
-type Column = [Slot]
-
-data Slot = Empty | Taken Player
+data Slot
+  = Empty
+  | Taken Player
   deriving (Eq)
+
+type Line = [Slot]
+
+type Row = Line
+
+type Column = Line
 
 instance Show Slot where
   show Empty = "."
@@ -41,7 +48,9 @@ instance Show Slot where
 
 type Move = Int
 
-data Status = Ongoing Player | Finished Outcome
+data Status
+  = Ongoing Player
+  | Finished Outcome
   deriving (Eq, Show)
 
 data Outcome = Win Player | Draw
@@ -70,10 +79,9 @@ availableMoves :: Game -> [Move]
 availableMoves Game {rows} =
   map fst
     . filter (hasBlanks . snd)
-    . zip [0..]
+    . zip [0 ..]
     $ toColumns rows
   where
-    hasBlanks :: Column -> Bool
     hasBlanks = elem Empty
 
 isOngoing :: Game -> Bool
@@ -83,14 +91,14 @@ findWinner :: Game -> Maybe Player
 findWinner Game {rows, adjacentToWin, nextPlayer} =
   check (toColumns rows) <|> check rows <|> check diagonals
   where
-    check :: [[Slot]] -> Maybe Player
-    check lines = findWinningStreak $ fmap (filterCurrentPlayer .  grr) lines
+    check :: [Line] -> Maybe Player
+    check lines = findWinningStreak $ fmap (filterCurrentPlayer . grr) lines
     grr :: [Slot] -> [[Slot]]
     grr = List.group
-    filterCurrentPlayer :: [[Slot]] -> [[Slot]]
+    filterCurrentPlayer :: [Line] -> [Line]
     filterCurrentPlayer = List.filter (all (== Taken currentPlayer))
     currentPlayer = if nextPlayer == Nought then Cross else Nought
-    findWinningStreak :: [[[Slot]]] -> Maybe Player
+    findWinningStreak :: [[Line]] -> Maybe Player
     findWinningStreak slots = if any ((== adjacentToWin) . length) (mconcat slots) then Just currentPlayer else Nothing
     diagonals = toDiagonals rows ++ toDiagonals (reverse rows)
 
@@ -109,7 +117,6 @@ updateSlot move player =
 
 addPlayer :: Player -> Column -> Column
 addPlayer player =
-  -- this is unsafe - we should instead make the whole makeMove operation inside Maybe, so that if no slots are available we can 'fail'
   replaceFirst Empty (Taken player)
 
 switchPlayer :: Game -> Game
@@ -126,12 +133,6 @@ switchPlayer Game {rows, nextPlayer = Cross, adjacentToWin} =
       adjacentToWin
     }
 
-replaceFirst :: Eq a => a -> a -> [a] -> [a]
-replaceFirst match replacement items =
-  replaceNth firstFound (const replacement) items
-  where
-    firstFound = fromMaybe 0 $ List.elemIndex match items
-
 toColumns :: [Row] -> [Column]
 toColumns = List.transpose
 
@@ -146,6 +147,14 @@ rowsAsStrings :: Game -> [String]
 rowsAsStrings Game {rows} = reverse $ map toRowString rows
   where
     toRowString = mconcat . map show
+
+-- List utils
+
+replaceFirst :: Eq a => a -> a -> [a] -> [a]
+replaceFirst match replacement items =
+  replaceNth firstFound (const replacement) items
+  where
+    firstFound = fromMaybe 0 $ List.elemIndex match items
 
 replaceNth :: Int -> (a -> a) -> [a] -> [a]
 replaceNth _ _ [] = []
