@@ -41,6 +41,8 @@ type Row = Line
 
 type Column = Line
 
+type Diagonal = Line
+
 instance Show Slot where
   show Empty = "."
   show (Taken Nought) = "o"
@@ -89,18 +91,14 @@ isOngoing Game {rows} = any (elem Empty) rows
 
 findWinner :: Game -> Maybe Player
 findWinner Game {rows, adjacentToWin, nextPlayer} =
-  check (toColumns rows) <|> check rows <|> check diagonals
+  check (toColumns rows) <|> check rows <|> check (toDiagonals rows)
   where
     check :: [Line] -> Maybe Player
-    check lines = findWinningStreak $ fmap (filterCurrentPlayer . grr) lines
-    grr :: [Slot] -> [[Slot]]
-    grr = List.group
-    filterCurrentPlayer :: [Line] -> [Line]
+    check = findWinningStreak . fmap (filterCurrentPlayer . List.group)
     filterCurrentPlayer = List.filter (all (== Taken currentPlayer))
     currentPlayer = if nextPlayer == Nought then Cross else Nought
     findWinningStreak :: [[Line]] -> Maybe Player
     findWinningStreak slots = if any ((== adjacentToWin) . length) (mconcat slots) then Just currentPlayer else Nothing
-    diagonals = toDiagonals rows ++ toDiagonals (reverse rows)
 
 makeMove :: Move -> Game -> Maybe Game
 makeMove move game@Game {nextPlayer} =
@@ -170,7 +168,14 @@ rotate90 = List.reverse . List.transpose
 rotate180 :: [[a]] -> [[a]]
 rotate180 = rotate90 . rotate90
 
-toDiagonals :: [[a]] -> [[a]]
-toDiagonals =
-  (++) <$> List.transpose . zipWith drop [0 ..]
-    <*> List.transpose . zipWith drop [1 ..] . rotate180
+toDiagonals :: [Row] -> [Diagonal]
+toDiagonals rows =
+  diagonals rows ++ diagonals (reverse rows)
+  where
+    diagonals r =
+      (++)
+        <$> List.transpose . zipWith drop [0 ..]
+        <*> List.transpose
+          . zipWith drop [1 ..]
+          . rotate180
+        $ r
