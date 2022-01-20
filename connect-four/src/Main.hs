@@ -9,7 +9,7 @@ main = do
   run defaultGame
 
 defaultGame :: Game
-defaultGame = Game.new 4 4 3
+defaultGame = Game.new 5 5 4
 
 run :: Game -> IO ()
 run game = do

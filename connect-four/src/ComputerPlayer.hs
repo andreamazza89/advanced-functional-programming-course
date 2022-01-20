@@ -1,13 +1,11 @@
 module ComputerPlayer where
 
-import Control.Applicative ((<|>))
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
-import Debug.Trace
 import qualified Game
 
-data Score = Good | Ok | Bad
-  deriving (Eq, Show)
+data Score = Bad | Ok | Good
+  deriving (Eq, Show, Ord)
 
 type Depth = Int
 
@@ -55,20 +53,8 @@ rateMove game computerPlayer currentDepth maxDepth move =
     afterMove = fromMaybe undefined $ Game.makeMove move game
 
 bestOf :: [(Game.Move, Score, Depth)] -> (Game.Move, Score, Depth)
-bestOf ratedMoves =
-  fromMaybe (fromMaybe (head ratedMoves) (Just (List.minimumBy foo ratedMoves))) $
-    firstGoodMove <|> firstOkMove
-  where
-    firstGoodMove = List.find ((== Good) . \(_, s, _) -> s) ratedMoves
-    firstOkMove = List.find ((== Ok) . \(_, s, _) -> s) ratedMoves
+bestOf = List.maximumBy (\(_, s, _) (_, s', _) -> compare s s')
 
 worstOf :: [(Game.Move, Score, Depth)] -> (Game.Move, Score, Depth)
-worstOf ratedMoves =
-  fromMaybe (fromMaybe (head ratedMoves) (Just (List.minimumBy foo ratedMoves))) $
-    firstBadMove <|> firstOkMove
-  where
-    firstBadMove = List.find ((== Bad) . \(_, s, _) -> s) ratedMoves
-    firstOkMove = List.find ((== Ok) . \(_, s, _) -> s) ratedMoves
-
-foo :: (Game.Move, Score, Depth) -> (Game.Move, Score, Depth) -> Ordering
-foo (_, _, d) (_, _, d') = compare d d'
+worstOf =
+  List.minimumBy (\(_, s, _) (_, s', _) -> compare s s')
