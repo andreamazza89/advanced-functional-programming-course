@@ -1,8 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Game
-  ( availableMoves,
+  (
+    availableMoves,
     new,
+    fromString,
     makeMove,
     status,
     rowsAsStrings,
@@ -17,6 +19,7 @@ where
 import Control.Applicative ((<|>))
 import qualified Data.List as List
 import Data.Maybe
+import Text.Read (readMaybe)
 
 data Game = Game
   -- Rows stored in reverse order (bottom to top). I think it would be better if we store columns instead of rows as there are more operations over columns than rows
@@ -48,7 +51,8 @@ instance Show Slot where
   show (Taken Nought) = "o"
   show (Taken Cross) = "x"
 
-type Move = Int
+newtype Move = Move Int
+  deriving (Show, Eq)
 
 data Status
   = Ongoing Player
@@ -79,12 +83,20 @@ status game =
 
 availableMoves :: Game -> [Move]
 availableMoves Game {rows} =
-  map fst
-    . filter (hasBlanks . snd)
-    . zip [0 ..]
-    $ toColumns rows
+  fmap Move available
   where
+    available =
+      fmap fst
+        . filter (hasBlanks . snd)
+        . zip [0 ..]
+        $ toColumns rows
     hasBlanks = elem Empty
+
+fromString :: Game -> String -> Maybe Move
+fromString game input = do
+    move <- Move <$> readMaybe input
+    List.find (== move) (availableMoves game)
+
 
 isOngoing :: Game -> Bool
 isOngoing Game {rows} = any (elem Empty) rows
@@ -100,14 +112,13 @@ findWinner Game {rows, adjacentToWin, nextPlayer} =
     findWinningStreak :: [[Line]] -> Maybe Player
     findWinningStreak slots = if any ((== adjacentToWin) . length) (mconcat slots) then Just currentPlayer else Nothing
 
-makeMove :: Move -> Game -> Maybe Game
-makeMove move game@Game {nextPlayer} =
-  Just
-    . switchPlayer
+makeMove :: Move -> Game -> Game
+makeMove (Move move) game@Game {nextPlayer} =
+  switchPlayer
     . updateRows (updateSlot move nextPlayer)
     $ game
 
-updateSlot :: Move -> Player -> [Row] -> [Row]
+updateSlot :: Int -> Player -> [Row] -> [Row]
 updateSlot move player =
   fromColumns
     . replaceNth move (addPlayer player)

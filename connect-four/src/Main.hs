@@ -1,8 +1,8 @@
 module Main where
 
-import Data.Maybe
-import Game
 import ComputerPlayer as Computer
+import Game
+import Data.Maybe (fromMaybe)
 
 main :: IO ()
 main = do
@@ -13,17 +13,17 @@ defaultGame = Game.new 5 5 4
 
 run :: Game -> IO ()
 run game = do
-  putStrLn $ "moves are: " ++ show (Game.availableMoves game)
   case Game.status game of
     Ongoing Nought -> do
+      printBoard game
       putStrLn "It's your turn o"
-      printBoard game
-      move <- readLn -- this is unsafe, as any non-integer input will blow up
-      run $ fromMaybe defaultGame (Game.makeMove move game) -- here we could handle invalid moves
+      -- here we just blow up if the input is not a valid move, but could instead retry or something
+      move <- fromMaybe undefined . Game.fromString game <$> getLine
+      run $ Game.makeMove move game
     Ongoing Cross -> do
-      putStrLn "Computer's turn "
       printBoard game
-      run $ fromMaybe defaultGame (Game.makeMove (Computer.bestMove game) game)
+      putStrLn "Computer's turn "
+      run (Game.makeMove (Computer.bestMove game) game)
     Finished Draw -> do
       putStrLn "It was a draw!"
       printBoard game
